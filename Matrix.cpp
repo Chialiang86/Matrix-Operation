@@ -1,6 +1,9 @@
 #include <iostream>
 #include <string>
 #include <stdexcept>
+#include <iomanip>
+
+#define THRESHOLD 0.00000001
 using namespace std;
 
 template<class T>
@@ -16,10 +19,10 @@ public:
     Matrix<T>& operator=(const Matrix<T>& M);
     Matrix<T> operator*(const Matrix<T>&) const;
     Matrix<T> operator*(const T& scaler) const ;
-
-    
     T& operator()(int r, int c) const;
     Matrix<T> transpose();
+
+    
     T determinant();
     Matrix<T> &RREF();
     Matrix<double> &inverse();
@@ -38,14 +41,15 @@ public:
 
     template<class U>
     friend void setIdentity(Matrix<U>&,int n);
+    
+    Matrix<T> &rowSwap(int row1, int row2);
+    Matrix<T> &rowAddTo(int row1, int row2, double scalar);
+    Matrix<T> &rowScale(int row, double scalar);
 
 private:
     T **matrix;
     int row;
     int col;
-    Matrix<T> &rowSwap(int row1, int row2);
-    Matrix<T> &rowAddTo(int row1, int row2, double scalar);
-    Matrix<T> &rowScale(int row, double scalar);
 };
 
 // ok
@@ -61,9 +65,14 @@ Matrix<T>::Matrix()
 template<class T>
 Matrix<T>::~Matrix()
 { 
-    for(int i = 0; i < row; i++)
-        delete[] matrix[row];
-    delete[] matrix;
+    /*
+    if(matrix){
+        for(int i = 0; i < row; i++)
+            if(matrix[row])
+                delete[] matrix[row];
+        delete[] matrix;
+    }
+    */
 }
 
 // ok
@@ -129,7 +138,7 @@ istream& operator>>(istream& i, Matrix<U>& M){
     cout << "please input " << r << " x " << c << " datas." << endl;
     for(int ri = 0; ri < r; ri++)
         for(int ci = 0; ci < c; ci++)
-         i >> M(ri, ci);
+            i >> M(ri, ci);
     return i;
 }
 
@@ -138,7 +147,7 @@ template<class U>
 ostream& operator<<(ostream& o, const Matrix<U>& M){
     for(int i = 0; i < M.r(); i++){
         for(int j = 0; j < M.c(); j++){
-            o << M(i, j) << " ";
+            o << setw(6) << M(i, j) << " ";
         }
         cout << endl;
     }
@@ -162,7 +171,7 @@ T& Matrix<T>::operator()(int r, int c) const {
 template<class T>
 Matrix<T> Matrix<T>::operator+(const Matrix<T>& M) const
 {
-     Matrix<T> res(row, col);
+    Matrix<T> res(row, col);
     for(int i = 0; i < row; i++)
         for(int j = 0; j < col; j++)
             res(i, j) = matrix[i][j] + M(i, j);
@@ -173,7 +182,7 @@ Matrix<T> Matrix<T>::operator+(const Matrix<T>& M) const
 template<class T>
 Matrix<T> Matrix<T>::operator-(const Matrix<T>& M) const
 {
-     Matrix<T> res(row, col);
+    Matrix<T> res(row, col);
     for(int i = 0; i < row; i++)
         for(int j = 0; j < col; j++)
             res(i, j) = matrix[i][j] - M(i, j);
@@ -183,11 +192,8 @@ Matrix<T> Matrix<T>::operator-(const Matrix<T>& M) const
 // ok
 template<class T>
 Matrix<T>& Matrix<T>::operator=(const Matrix<T>& M){
-    row = M.row;
-    col = M.col;
-    matrix = new T*[row];
-    for(int i = 0; i < row; i++)
-        matrix[i] = new T[col];
+    if(this == &M) return *this;
+    if(row != M.r() || col != M.c()) resize(M.r(), M.c());
     for(int i = 0; i < row; i++)
         for(int j = 0; j < col; j++)
             matrix[i][j] = M(i, j);
@@ -229,12 +235,62 @@ Matrix<T> Matrix<T>::operator*(const T& scaler) const{
     return res;
 }
 
+template<class U>
+Matrix<U> operator*(U scaler, Matrix<U>& M){
+    Matrix<U> res(M.r(), M.c());
+    for(int r = 0; r < res.r(); r++)
+        for(int c = 0; c < res.c(); c++)
+            res(r, c) = scaler * M(r, c);
+    return res;
+}
+
+//ok
+template<class T>
+Matrix<T>& Matrix<T>::rowSwap(int row1, int row2){
+    try{
+        if(row1 == row2) return *this;
+        if(row1 < 0 || row1 >= row || row2 < 0 || row2 >= row)
+            throw "rowSwap arg error";
+    } catch(const char * errmsg){
+        cout << errmsg << endl;
+        exit(0);
+    }
+
+    T temp;
+    for(int i = 0; i < col; i++){
+        temp = matrix[row1][i];
+        matrix[row1][i] = matrix[row2][i];
+        matrix[row2][i] = temp;
+    }
+    return *this;
+}
+
+
+// ok
+template<class T>
+Matrix<T>& Matrix<T>::rowAddTo(int row1, int row2, double scalar){
+    try{
+        if(row1 == row2) return *this;
+        if(row1 < 0 || row1 >= row || row2 < 0 || row2 >= row)
+            throw "rowAddTo arg error";
+    } catch(const char * errmsg){
+        cout << errmsg << endl;
+        exit(0);
+    }
+
+    Matrix<T> res;
+    double temp;
+    for(int i = 0; i < col; i++)
+        matrix[row2][i] = (T)(scalar * matrix[row1][i] + matrix[row2][i]);
+    return * this;
+}
+
 // ok
 template<class T>
 void Matrix<T>::print(){
     for(int i = 0; i < row; i++){
         for(int j = 0; j < col; j++){
-            cout << matrix[i][j] << " ";
+            cout << setw(6) << matrix[i][j] << " ";
         }
         cout << endl;
     }
@@ -269,10 +325,18 @@ int main(int argc, char * argv[]){
     cout << "--------------" << endl;
 
     Matrix<int> m4;
-    m4 = m2 * m3 * 2;
     cout << "m4:" << endl;
+    m4 = m2 * (m2 * m2 + 2 * m3 * 3);
     cout << m4;
     cout << "--------------" << endl;
+
+    Matrix<double> m5;
+    setIdentity(m5, 3);
+    m5 = m5.rowSwap(0, 2).rowAddTo(2, 0, 3.67);
+    cout << "m5:" << endl;
+    cout << m5;
+    cout << "--------------" << endl;
+
 
     return 0;
 }
