@@ -14,7 +14,7 @@ public:
     Matrix(int r, int c); // initialize r * c zero matrix
     Matrix(int n); // initialize n * n identity matrix
     ~Matrix();
-    Matrix(Matrix<T> &a);
+    Matrix(const Matrix<T> &a);
     Matrix<T> operator+(const Matrix<T>& a) const;
     Matrix<T> operator-(const Matrix<T>&) const;
     Matrix<T>& operator=(const Matrix<T>& M);
@@ -109,7 +109,7 @@ Matrix<T>::Matrix(int n)
 
 
 template<class T>
-Matrix<T>::Matrix(Matrix<T> &a)
+Matrix<T>::Matrix(const Matrix<T> &a)
 {
     row = a.r();
     col = a.c();
@@ -124,17 +124,17 @@ Matrix<T>::Matrix(Matrix<T> &a)
 
 template<class T>
 Matrix<T> Matrix<T>::I(int n){
-    return *(new Matrix(n));
+    return *(new Matrix<T>(n));
 }
 
 template<class T>
 Matrix<T> Matrix<T>::O(int r, int c){
-    return *(new Matrix(r, c));
+    return *(new Matrix<T>(r, c));
 }
 
 template<class T>
 void Matrix<T>::resize(int r, int c){
-    if(rol == r && col == c) return;
+    if(row == r && col == c) return;
     row = r;
     col = c;
     matrix = new T*[row];
@@ -544,21 +544,21 @@ int main(int argc, char * argv[]){
     Matrix<double> m1 = Matrix<double>::I(3);
     cout << "m1:" << endl;
     cout << m1;
-    cout << "--------------" << endl;
+    cout << "===================================================" << endl;
 
     Matrix<double> m2;
     cin >> m2;
     cout << "m2:" << endl;
     cout << m2;
     cout << "det = " << m2.determinant() << endl;
-    cout << "--------------" << endl;
+    cout << "===================================================" << endl;
 
     Matrix<double> m3;
     cin >> m3;
     cout << "m3:" << endl;
     cout << m3;
     cout << "det = " << m3.determinant() << endl;
-    cout << "--------------" << endl;
+    cout << "===================================================" << endl;
 
     Matrix<double> m4;
     cout << "m2 * 3 * m3 + 2 * m1 :" << endl;
@@ -567,10 +567,22 @@ int main(int argc, char * argv[]){
     cout << "m2 inverse :" << endl;
     m4 = m2.inverse();
     cout << m4;
+    cout << "m3 inverse :" << endl;
+    m4 = m3.inverse();
+    cout << m4;
     cout << "m2 rref :" << endl;
     m4 = m2.RREF();
     cout << m4;
-    cout << "--------------" << endl;
+    cout << "m3 rref :" << endl;
+    m4 = m3.RREF();
+    cout << m4;
+    cout << "m2 transpose :" << endl;
+    m4 = m2.transpose();
+    cout << m4;
+    cout << "m3 transpose :" << endl;
+    m4 = m3.transpose();
+    cout << m4;
+    cout << "===================================================" << endl;
 
     return 0;
 }
