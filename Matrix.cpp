@@ -74,22 +74,7 @@ Matrix<T>::Matrix()
 template<class T>
 Matrix<T>::~Matrix()
 { 
-    /*
-    try{
-        if(matrix){
-            for(int i = 0; i < row; i++)
-                if(matrix[row])
-                    delete[] matrix[row];
-            delete[] matrix;
-            matrix = NULL;
-        }
-    } catch(exception e){
-        cout << "destruct err" << endl;
-        
-        exit(0);
-    }
-    */
-    
+    // cout << "destruct done." << endl;
 }
 
 
@@ -158,12 +143,14 @@ Matrix<T>::Matrix(const Matrix<T> &a)
 
 template<class T>
 Matrix<T> Matrix<T>::I(int n){
-    return *(new Matrix<T>(n));
+    Matrix<T> res(n);
+    return res;
 }
 
 template<class T>
 Matrix<T> Matrix<T>::O(int r, int c){
-    return *(new Matrix<T>(r, c));
+    Matrix<T> res(r, c);
+    return res;
 }
 
 template<class T>
