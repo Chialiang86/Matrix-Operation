@@ -42,9 +42,7 @@ public:
     // 自訂義function
     static Matrix<T> I(int n); // return n * n identity matrix
     static Matrix<T> O(int r, int c); // return r * c zero matrix
-    static Matrix<int>& doubleToInt(const Matrix<double> &M);
-    static Matrix<double>& intToDouble(const Matrix<int> &M);
-    Matrix<T>& rowOp(RowOp type, int row1, int row2, double scalar);
+    Matrix<T>& rowOp(RowOp type, int row1, int row2, double scalar); // Row operation util
     int r() const; // return rol
     int c() const; // return col
     void resize(int r, int c); // resize to r * c zero matrix
@@ -76,14 +74,21 @@ Matrix<T>::Matrix()
 template<class T>
 Matrix<T>::~Matrix()
 { 
-    
-    if(matrix){
-        for(int i = 0; i < row; i++)
-            if(matrix[row])
-                delete[] matrix[row];
-        delete[] matrix;
-        matrix = NULL;
+    /*
+    try{
+        if(matrix){
+            for(int i = 0; i < row; i++)
+                if(matrix[row])
+                    delete[] matrix[row];
+            delete[] matrix;
+            matrix = NULL;
+        }
+    } catch(exception e){
+        cout << "destruct err" << endl;
+        
+        exit(0);
     }
+    */
     
 }
 
@@ -91,45 +96,63 @@ Matrix<T>::~Matrix()
 template<class T>
 Matrix<T>::Matrix(int r, int c)
 { 
-    row = r;
-    col = c;
-    matrix = new T*[row];
-    for(int i = 0; i < row; i++)
-        matrix[i] = new T[col];
-    for(int i = 0; i < row; i++)
-        for(int j = 0; j < col; j++)
-            matrix[i][j] = 0;
+    try{
+        row = r;
+        col = c;
+        matrix = new T*[row];
+        for(int i = 0; i < row; i++)
+            matrix[i] = new T[col];
+        for(int i = 0; i < row; i++)
+            for(int j = 0; j < col; j++)
+                matrix[i][j] = 0;
+    } catch(exception e){
+        cout << "malloc err r c" << endl;
+        
+        exit(0);
+    }
 }
 
 
 template<class T>
 Matrix<T>::Matrix(int n)
 { 
-    row = n;
-    col = n;
-    matrix = new T*[row];
-    for(int i = 0; i < row; i++)
-        matrix[i] = new T[col];
-    for(int i = 0; i < row; i++)
-        for(int j = 0; j < col; j++)
-            if(i == j)
-                matrix[i][j] = 1;
-            else
-                matrix[i][j] = 0;
+    try{
+        row = n;
+        col = n;
+        matrix = new T*[row];
+        for(int i = 0; i < row; i++)
+            matrix[i] = new T[col];
+        for(int i = 0; i < row; i++)
+            for(int j = 0; j < col; j++)
+                if(i == j)
+                    matrix[i][j] = 1;
+                else
+                    matrix[i][j] = 0;
+    } catch(exception e){
+        cout << "malloc err n" << endl;
+        
+        exit(0);
+    }
 }
 
 
 template<class T>
 Matrix<T>::Matrix(const Matrix<T> &a)
 {
-    row = a.r();
-    col = a.c();
-    matrix = new T*[a.row];
-    for(int i = 0; i < a.row; ++i)
-        matrix[i] = new T[a.col];
-    for(int i = 0; i < row; i++)
-        for(int j = 0; j < col; j++)
-            matrix[i][j] = a(i, j);
+    try{
+        row = a.r();
+        col = a.c();
+        matrix = new T*[row];
+        for(int i = 0; i < row; i++)
+            matrix[i] = new T[col];
+        for(int i = 0; i < row; i++)
+            for(int j = 0; j < col; j++)
+                matrix[i][j] = a(i, j);
+    } catch(exception e){
+        cout << "malloc err r c" << endl;
+        
+        exit(0);
+    }
 }
 
 
@@ -146,14 +169,21 @@ Matrix<T> Matrix<T>::O(int r, int c){
 template<class T>
 void Matrix<T>::resize(int r, int c){
     if(row == r && col == c) return;
-    row = r;
-    col = c;
-    matrix = new T*[row];
-    for(int i = 0; i < row; i++)
-        matrix[i] = new T[col];
-    for(int i = 0; i < row; i++)
-        for(int j = 0; j < col; j++)
-            matrix[i][j] = 0;
+    
+    try{
+        row = r;
+        col = c;
+        matrix = new T*[row];
+        for(int i = 0; i < row; i++)
+            matrix[i] = new T[col];
+        for(int i = 0; i < row; i++)
+            for(int j = 0; j < col; j++)
+                matrix[i][j] = 0;
+    } catch(exception e){
+        cout << "malloc err resize" << endl;
+        
+        exit(0);
+    }
 }
 
 
@@ -172,8 +202,27 @@ int Matrix<T>::c() const{
 template<class U>
 istream& operator>>(istream& i, Matrix<U>& M){
     int r, c;
-    cout << "please input nums of row and col:";
-    i >> r >> c;
+    bool legal;
+    do{
+        legal = true;
+        cout << "please input nums of row:";
+        i >> r;
+        if(r <= 0){
+            cout << "nums of row should > 0 !" << endl;
+            legal = false;
+        }
+    } while(!legal);
+    
+    do{
+        legal = true;
+        cout << "please input nums of col:";
+        i >> c;
+        if(c <= 0){
+            cout << "nums of col should > 0 !" << endl;
+            legal = false;
+        }
+    } while(!legal);
+
     M.resize(r, c);
     cout << "input " << r << " x " << c << " = " << r * c<< " datas." << endl;
     for(int ri = 0; ri < r; ri++)
@@ -188,9 +237,9 @@ ostream& operator<<(ostream& o, const Matrix<U>& M){
     for(int i = 0; i < M.r(); i++){
         for(int j = 0; j < M.c(); j++)
             o << setw(10) << M(i, j) << " ";
-        cout << endl;
+        o << endl;
     }
-    cout << endl;
+    o << endl;
     return o;
 }
 
@@ -238,23 +287,6 @@ Matrix<T>& Matrix<T>::operator=(const Matrix<T>& M){
         for(int j = 0; j < col; j++)
             matrix[i][j] = M(i, j);
     return *this;        
-}
-
-
-Matrix<int>& doubleToInt(const Matrix<double> &M){
-    Matrix<int>* res = new Matrix<int>(M.r(), M.c());
-    for(int i = 0; i < (*res).r(); i++)
-        for(int j = 0; j < (*res).c(); j++)
-            (*res)(i, j) = (int)M(i, j);
-    return * res;  
-}
-
-Matrix<double>& intToDouble(const Matrix<int> &M){
-    Matrix<double>* res = new Matrix<double>(M.r(), M.c());
-    for(int i = 0; i < (*res).r(); i++)
-        for(int j = 0; j < (*res).c(); j++)
-            (*res)(i, j) = (double)M(i, j);
-    return * res;  
 }
 
 
@@ -332,7 +364,7 @@ Matrix<T>& Matrix<T>::rowOp(RowOp type, int row1, int row2, double scalar){
             rowScale(row1, scalar);
             break;
         case RowAddTo:
-            rowSwap(row1, row2);
+            rowAddTo(row1, row2, scalar);
             break;
         default:
             cout << "error row operation type!" << endl;
@@ -348,7 +380,7 @@ Matrix<T>& Matrix<T>::rowSwap(int row1, int row2){
         if(row1 < 0 || row1 >= row || row2 < 0 || row2 >= row)
             throw "rowSwap arg error";
     } catch(const char * errmsg){
-        cout << errmsg << endl;
+        cout << errmsg << " row1=" << row1 << ", row2=" << row2 << ", row=" << row << endl;
         exit(0);
     }
 
@@ -370,15 +402,15 @@ Matrix<T>& Matrix<T>::rowAddTo(int row1, int row2, double scalar){
         if(row1 < 0 || row1 >= row || row2 < 0 || row2 >= row)
             throw "rowAddTo arg error";
     } catch(const char * errmsg){
-        cout << errmsg << endl;
+        cout << errmsg << " row1=" << row1 << ", row2=" << row2 << ", row=" << row << endl;
         exit(0);
     }
 
-    Matrix<T> res;
     double temp;
     for(int i = 0; i < col; i++){
-        temp = (T)(scalar * matrix[row1][i] + matrix[row2][i]);
-        matrix[row2][i] = (temp <= (T)THRESHOLD && temp >= -(T)THRESHOLD) ? (T)(0.0) : temp;
+        temp = scalar * matrix[row1][i] + matrix[row2][i];
+        temp = (temp <= THRESHOLD && temp >= -THRESHOLD) ? 0.0 : temp;
+        matrix[row2][i] = (T)(temp);
     }
     return * this;
 }
@@ -390,15 +422,15 @@ Matrix<T>& Matrix<T>::rowScale(int r, double scalar){
         if(r < 0 || r >= row)
             throw "rowScale arg error";
     } catch(const char * errmsg){
-        cout << errmsg << endl;
+        cout << errmsg << " arg=" << r << ", row=" << row << endl;
         exit(0);
     }
 
-    T temp;
+    double temp;
     for(int i = 0; i < col; i++){
-        temp = (T)(scalar * matrix[r][i]);
-        temp = (temp <= (T)THRESHOLD && temp >= -(T)THRESHOLD) ? (T)(0.0) : temp;
-        matrix[r][i] = temp;
+        temp = (double)(scalar * matrix[r][i]);
+        temp = (temp <= THRESHOLD && temp >= -THRESHOLD) ? 0.0 : temp;
+        matrix[r][i] = (T)(temp);
     }
     return * this;
 }
@@ -499,7 +531,7 @@ Matrix<T>& Matrix<T>::inverse(){
 
         if(r == row) break; // no pivot exist, end;
 
-        fac = 1.0 / matrix[pivotRow][pivotCol];
+        fac = 1.0 / matrix[r][pivotCol];
         rowSwap(r, pivotRow); // swap the pivot pos to upper part of matrix
         ans->rowOp(RowSwap, r, pivotRow, -1);
         rowScale(pivotRow, fac); // set pivot num to 1, rescale pivot num 
@@ -516,7 +548,7 @@ Matrix<T>& Matrix<T>::inverse(){
         pivotRow++;
     }
 
-    if(this->determinant() == 0){
+    if(determinant() == 0){
         cout << "the inverse matrix doesn't exist." << endl;
         *ans = Matrix<T>::O(row, col);
     }
@@ -608,53 +640,123 @@ int main(int argc, char * argv[]){
     cout << "===================================================" << endl;
     cout << "--- int matrix demo ---" << endl;
     Matrix<int> m1, m2, m1Copy, m2Copy;
-    cout << "input int matrix m1(3x3)" << endl;
+    cout << "input int matrix m1(建議3x3)" << endl;
     cin >> m1;
     m1Copy = m1;
     cout << "m1:" << endl;
     cout << m1 << endl;
-    cout << "m1 determinant:" << endl;
-    cout << m1.determinant() << endl;
+    cout << "m1 * 2" << endl;
+    cout << m1 * 2 << endl;
+    if(m1.r() == m1.c()){
+        cout << "m1 determinant:";
+        cout << m1.determinant() << endl;
+    }
     cout << "m1 transpose:" << endl;
     cout << m1.transpose() << endl;
     cout << "m1 RREF:" << endl;
     cout << m1.RREF() << endl;
-    cout << "m1 inverse:" << endl;
-    cout << m1.inverse() << endl;
+    if(m1.r() == m1.c()){
+        cout << "m1 inverse:" << endl;
+        cout << m1.inverse() << endl;
+    }
     cout << "copy of m1:" << endl;
     cout << m1Copy << endl;
-    cout << "input int matrix m2(3x3)" << endl;
+    cout << "input int matrix m2(建議3x3)" << endl;
     cin >> m2;
     m2Copy = m2;
     cout << "m2:" << endl;
     cout << m2 << endl;
-    cout << "m2 determinant:" << endl;
-    cout << m2.determinant() << endl;
+    cout << "3 * m2" << endl;
+    cout << 3 * m2 << endl;
+    if(m2.r() == m2.c()){
+        cout << "m2 determinant:";
+        cout << m2.determinant() << endl;
+    }
     cout << "m2 transpose:" << endl;
     cout << m2.transpose() << endl;
     cout << "m2 RREF:" << endl;
     cout << m2.RREF() << endl;
-    cout << "m2 inverse:" << endl;
-    cout << m2.inverse() << endl;
+    if(m2.r() == m2.c()){
+        cout << "m2 inverse:" << endl;
+        cout << m2.inverse() << endl;
+    }
     cout << "copy of m2:" << endl;
     cout << m2Copy << endl;
-    cout << "m1 + m2" << endl;
-    cout << m1 + m2 << endl;
-    cout << "m1 - m2" << endl;
-    cout << m1 - m2 << endl;
-    cout << "m1 * m2" << endl;
-    cout << m1 * m2 << endl;
-    cout << "m1 * 2" << endl;
-    cout << m1 * 2 << endl;
-    cout << "(2 * m1) + (3 * m1 * 2) + m1 transpose + det(m2)" << endl;
-    cout << (2 * m1) + (3 * m1 * 2) + m1.transpose() + m2.determinant() << endl;
+    if(m1.r() == m2.r() && m1.c() == m2.c()){
+        cout << "m1 + m2" << endl;
+        cout << m1 + m2 << endl;
+        cout << "m1 - m2" << endl;
+        cout << m1 - m2 << endl;
+    }
+    if(m1.r() == m2.c() && m1.c() == m2.r()){
+        cout << "m1 * m2" << endl;
+        cout << m1 * m2 << endl;
+    }
+    if(m1.r() == m2.r() && m1.c() == m2.c() && m2.r() == m2.c() && m1.r() == m1.c()){
+        cout << "(2 * m1) + (m1 * m2 * 5) + m1 transpose" << endl;
+        cout << (2 * m1) + (m1 * m2 * 5) + m1.transpose()<< endl;
+    }
     cout << "===================================================" << endl;
-
-    Matrix<double> m3;
+    
+    cout << "===================================================" << endl;
+    cout << "--- double matrix demo ---" << endl;
+    Matrix<double> m3, m4, m3Copy, m4Copy;
+    cout << "input double matrix m3(建議3x3)" << endl;
     cin >> m3;
+    m3Copy = m3;
     cout << "m3:" << endl;
-    cout << m3;
-    cout << "det = " << m3.determinant() << endl;
+    cout << m3 << endl;
+    cout << "m3 * 2" << endl;
+    cout << m3 * 2 << endl;
+    if(m3.r() == m3.c()){
+        cout << "m3 determinant:";
+        cout << m3.determinant() << endl;
+    }
+    cout << "m3 transpose:" << endl;
+    cout << m3.transpose() << endl;
+    cout << "m3 RREF:" << endl;
+    cout << m3.RREF() << endl;
+    if(m3.r() == m3.c()){
+        cout << "m3 inverse:" << endl;
+        cout << m3.inverse() << endl;
+    }
+    cout << "copy of m3:" << endl;
+    cout << m3Copy << endl;
+    cout << "input double matrix m4(建議3x3)" << endl;
+    cin >> m4;
+    m4Copy = m4;
+    cout << "m4:" << endl;
+    cout << m4 << endl;
+    cout << "3 * m4" << endl;
+    cout << 3.0 * m4 << endl;
+    if(m4.r() == m4.c()){
+        cout << "m4 determinant:";
+        cout << m4.determinant() << endl;
+    }
+    cout << "m4 transpose:" << endl;
+    cout << m4.transpose() << endl;
+    cout << "m4 RREF:" << endl;
+    cout << m4.RREF() << endl;
+    if(m4.r() == m4.c()){
+        cout << "m4 inverse:" << endl;
+        cout << m4.inverse() << endl;
+    }
+    cout << "copy of m4:" << endl;
+    cout << m4Copy << endl;
+    if(m3.r() == m4.r() && m3.c() == m4.c()){
+        cout << "m3 + m4" << endl;
+        cout << m3 + m4 << endl;
+        cout << "m3 - m4" << endl;
+        cout << m3 - m4 << endl;
+    }
+    if(m3.r() == m4.c() && m3.c() == m4.r()){
+        cout << "m3 * m4" << endl;
+        cout << m3 * m4 << endl;
+    }
+    if(m3.r() == m4.r() && m3.c() == m4.c() && m4.r() == m4.c() && m3.r() == m3.c()){
+        cout << "(2 * m3) + (3 * m3 * m4) + m4 transpose" << endl;
+        cout << (2.0 * m3) + (3.0 * m3 * m4) + m4.transpose() << endl;
+    }
     cout << "===================================================" << endl;
 
 
