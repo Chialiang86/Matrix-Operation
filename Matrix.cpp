@@ -6,6 +6,9 @@
 #define THRESHOLD 0.0000000001
 using namespace std;
 
+
+enum RowOp { None = 0, RowSwap = 1, RowScale = 2, RowAddTo = 3};
+
 template<class T>
 class Matrix
 {
@@ -26,7 +29,7 @@ public:
     Matrix<T> transpose();
     T determinant();
     Matrix<T> &RREF();
-    Matrix<double> &inverse();
+    Matrix<T> &inverse();
 
     // friend class
     template<class U>
@@ -39,15 +42,22 @@ public:
     // 自訂義function
     static Matrix<T> I(int n); // return n * n identity matrix
     static Matrix<T> O(int r, int c); // return r * c zero matrix
+    static Matrix<int>& doubleToInt(const Matrix<double> &M);
+    static Matrix<double>& intToDouble(const Matrix<int> &M);
+    Matrix<T>& rowOp(RowOp type, int row1, int row2, double scalar);
     int r() const; // return rol
     int c() const; // return col
     void resize(int r, int c); // resize to r * c zero matrix
     void print(); //print matrix
+
+    
+    
+private:
     
     Matrix<T> &rowSwap(int row1, int row2);
     Matrix<T> &rowAddTo(int row1, int row2, double scalar);
     Matrix<T> &rowScale(int row, double scalar);
-private:
+
     T **matrix;
     int row;
     int col;
@@ -66,14 +76,15 @@ Matrix<T>::Matrix()
 template<class T>
 Matrix<T>::~Matrix()
 { 
-    /*
+    
     if(matrix){
         for(int i = 0; i < row; i++)
             if(matrix[row])
                 delete[] matrix[row];
         delete[] matrix;
+        matrix = NULL;
     }
-    */
+    
 }
 
 
@@ -230,6 +241,23 @@ Matrix<T>& Matrix<T>::operator=(const Matrix<T>& M){
 }
 
 
+Matrix<int>& doubleToInt(const Matrix<double> &M){
+    Matrix<int>* res = new Matrix<int>(M.r(), M.c());
+    for(int i = 0; i < (*res).r(); i++)
+        for(int j = 0; j < (*res).c(); j++)
+            (*res)(i, j) = (int)M(i, j);
+    return * res;  
+}
+
+Matrix<double>& intToDouble(const Matrix<int> &M){
+    Matrix<double>* res = new Matrix<double>(M.r(), M.c());
+    for(int i = 0; i < (*res).r(); i++)
+        for(int j = 0; j < (*res).c(); j++)
+            (*res)(i, j) = (double)M(i, j);
+    return * res;  
+}
+
+
 template<class T>
 bool Matrix<T>::operator==(const Matrix<T>& M){
     if(row != M.r() || col != M.c()) return false;
@@ -294,7 +322,25 @@ Matrix<U> operator*(U scalar, Matrix<U>& M){
     return res;
 }
 
-//ok
+template<class T>
+Matrix<T>& Matrix<T>::rowOp(RowOp type, int row1, int row2, double scalar){
+    switch(type){
+        case RowSwap:
+            rowSwap(row1, row2);
+            break;
+        case RowScale:
+            rowScale(row1, scalar);
+            break;
+        case RowAddTo:
+            rowSwap(row1, row2);
+            break;
+        default:
+            cout << "error row operation type!" << endl;
+            break;
+    }
+    return *this;
+}
+
 template<class T>
 Matrix<T>& Matrix<T>::rowSwap(int row1, int row2){
     try{
@@ -412,7 +458,7 @@ Matrix<T>& Matrix<T>::RREF(){
 }
 
 template<class T>
-Matrix<double>& Matrix<T>::inverse(){
+Matrix<T>& Matrix<T>::inverse(){
     try{
         if(row != col)
             throw "row and col should be same to conpute inverse";
@@ -420,6 +466,14 @@ Matrix<double>& Matrix<T>::inverse(){
         cout << errmsg << endl;
         exit(0); 
     }
+
+    /* --- 概念 ---
+     * 設 n*n 矩陣 A 
+     * [ A | I ] -> RREF -> [ I | A inverse ]
+     * 把 A 跟 I 同步列運算，把 A 的 RREF 拿來檢測 
+     * 1.若 A 變成 I -> I 變成 A inverse
+     * 2.否則 A inverse 不存在 -> 回傳 zero matrix
+     */
 
     Matrix<T>* ans = new Matrix<T>(row);
     Matrix<T> cache = *this;
@@ -443,31 +497,31 @@ Matrix<double>& Matrix<T>::inverse(){
             pivotCol++;
         }
 
-        if(r == row) break;
+        if(r == row) break; // no pivot exist, end;
 
         fac = 1.0 / matrix[pivotRow][pivotCol];
-        rowSwap(r, pivotRow);
-        ans->rowSwap(r, pivotRow);
-        rowScale(pivotRow, fac);
-        ans->rowScale(pivotRow, fac);
+        rowSwap(r, pivotRow); // swap the pivot pos to upper part of matrix
+        ans->rowOp(RowSwap, r, pivotRow, -1);
+        rowScale(pivotRow, fac); // set pivot num to 1, rescale pivot num 
+        ans->rowOp(RowScale, pivotRow, -1, fac);
 
         //row operation to make RREF
         for(int i = 0; i < row; i++){
             if(i != pivotRow && matrix[i][pivotCol] != 0){
                 fac = - (double)(matrix[i][pivotCol]);
                 rowAddTo(pivotRow, i, fac);
-                ans->rowAddTo(pivotRow, i, fac);
+                ans->rowOp(RowAddTo, pivotRow, i, fac);
             }
         }
         pivotRow++;
     }
 
-    if(*this != Matrix<T>::I(row)){
+    if(this->determinant() == 0){
         cout << "the inverse matrix doesn't exist." << endl;
         *ans = Matrix<T>::O(row, col);
     }
 
-    *this = cache;
+    *this = cache; // restore self
     return *ans;
 }
 
@@ -480,6 +534,13 @@ T Matrix<T>::determinant(){
         cout << errmsg << endl;
         exit(0); 
     }
+
+    /* --- 概念 ---
+     * 設 n*n 矩陣 A 經列運算變成 B，為 A 的REF，讓pivot 維持原本的大小 （不做 row scale 列運算）
+     * 此時 B 為上三角方陣
+     * 因為 det(A) = det(B)
+     * det(B) 即 主對角項連乘積 即為答案
+     */
 
     Matrix<T> cache = *this;
     T ans = 1;
@@ -505,11 +566,11 @@ T Matrix<T>::determinant(){
         if(r == row) break;
 
         if(r != pivotRow){
-            ans *= -1;
+            ans *= -1; // determinant *= -1 when row swapping
             rowSwap(r, pivotRow);
         }
 
-        //row operation to make RREF
+        //row operation to make REF
         for(int i = 0; i < row; i++){
             if(i != pivotRow && matrix[i][pivotCol] != 0){
                 fac = - (double)(matrix[i][pivotCol]) / matrix[pivotRow][pivotCol] ;
@@ -520,9 +581,11 @@ T Matrix<T>::determinant(){
     }
 
     for(int i = 0; i < row; i++)
-        ans *= (T)(matrix[i][i]);
+        ans *= (T)(matrix[i][i]); // REF主對角線元素相乘就是determin
 
-    *this = cache;
+    ans = (ans <= (T)THRESHOLD && ans >= -(T)THRESHOLD) ? (T)(0.0) : ans; // detect double -0.0
+
+    *this = cache; // restore self
 
     return ans;
 
@@ -541,16 +604,50 @@ void Matrix<T>::print(){
 
 
 int main(int argc, char * argv[]){
-    Matrix<double> m1 = Matrix<double>::I(3);
-    cout << "m1:" << endl;
-    cout << m1;
-    cout << "===================================================" << endl;
 
-    Matrix<double> m2;
+    cout << "===================================================" << endl;
+    cout << "--- int matrix demo ---" << endl;
+    Matrix<int> m1, m2, m1Copy, m2Copy;
+    cout << "input int matrix m1(3x3)" << endl;
+    cin >> m1;
+    m1Copy = m1;
+    cout << "m1:" << endl;
+    cout << m1 << endl;
+    cout << "m1 determinant:" << endl;
+    cout << m1.determinant() << endl;
+    cout << "m1 transpose:" << endl;
+    cout << m1.transpose() << endl;
+    cout << "m1 RREF:" << endl;
+    cout << m1.RREF() << endl;
+    cout << "m1 inverse:" << endl;
+    cout << m1.inverse() << endl;
+    cout << "copy of m1:" << endl;
+    cout << m1Copy << endl;
+    cout << "input int matrix m2(3x3)" << endl;
     cin >> m2;
+    m2Copy = m2;
     cout << "m2:" << endl;
-    cout << m2;
-    cout << "det = " << m2.determinant() << endl;
+    cout << m2 << endl;
+    cout << "m2 determinant:" << endl;
+    cout << m2.determinant() << endl;
+    cout << "m2 transpose:" << endl;
+    cout << m2.transpose() << endl;
+    cout << "m2 RREF:" << endl;
+    cout << m2.RREF() << endl;
+    cout << "m2 inverse:" << endl;
+    cout << m2.inverse() << endl;
+    cout << "copy of m2:" << endl;
+    cout << m2Copy << endl;
+    cout << "m1 + m2" << endl;
+    cout << m1 + m2 << endl;
+    cout << "m1 - m2" << endl;
+    cout << m1 - m2 << endl;
+    cout << "m1 * m2" << endl;
+    cout << m1 * m2 << endl;
+    cout << "m1 * 2" << endl;
+    cout << m1 * 2 << endl;
+    cout << "(2 * m1) + (3 * m1 * 2) + m1 transpose + det(m2)" << endl;
+    cout << (2 * m1) + (3 * m1 * 2) + m1.transpose() + m2.determinant() << endl;
     cout << "===================================================" << endl;
 
     Matrix<double> m3;
@@ -560,29 +657,6 @@ int main(int argc, char * argv[]){
     cout << "det = " << m3.determinant() << endl;
     cout << "===================================================" << endl;
 
-    Matrix<double> m4;
-    cout << "m2 * 3 * m3 + 2 * m1 :" << endl;
-    m4 = m2 * 3 * m3 + m1 * 2;
-    cout << m4;
-    cout << "m2 inverse :" << endl;
-    m4 = m2.inverse();
-    cout << m4;
-    cout << "m3 inverse :" << endl;
-    m4 = m3.inverse();
-    cout << m4;
-    cout << "m2 rref :" << endl;
-    m4 = m2.RREF();
-    cout << m4;
-    cout << "m3 rref :" << endl;
-    m4 = m3.RREF();
-    cout << m4;
-    cout << "m2 transpose :" << endl;
-    m4 = m2.transpose();
-    cout << m4;
-    cout << "m3 transpose :" << endl;
-    m4 = m3.transpose();
-    cout << m4;
-    cout << "===================================================" << endl;
 
     return 0;
 }
