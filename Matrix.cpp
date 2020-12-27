@@ -17,7 +17,7 @@ public:
     Matrix(int n); // initialize n * n identity matrix
     ~Matrix();
     Matrix(const Matrix<T> &a);
-    Matrix<T> operator+(const Matrix<T>& a) const;
+    Matrix<T> operator+(const Matrix<T>&) const;
     Matrix<T> operator-(const Matrix<T>&) const;
     Matrix<T>& operator=(const Matrix<T>& M);
     bool operator==(const Matrix<T>& M); // logical egual
@@ -73,7 +73,13 @@ Matrix<T>::Matrix()
 template<class T>
 Matrix<T>::~Matrix()
 { 
-    // cout << "destruct done." << endl;
+    if(matrix != NULL){
+        for(int i = 0; i < row; i++)
+            if(matrix[i] != NULL)
+                delete[] matrix[i];
+        delete[] matrix;
+        matrix = NULL;
+    }
 }
 
 
