@@ -3,7 +3,6 @@
 #include <stdexcept>
 #include <iomanip>
 
-#define THRESHOLD 0.0000000001
 using namespace std;
 
 
@@ -43,7 +42,7 @@ public:
     static Matrix<T> I(int n); // return n * n identity matrix
     static Matrix<T> O(int r, int c); // return r * c zero matrix
     Matrix<T>& rowOp(RowOp type, int row1, int row2, double scalar); // Row operation util
-    int r() const; // return rol
+    int r() const; // return row
     int c() const; // return col
     void resize(int r, int c); // resize to r * c zero matrix
     void print(); //print matrix
@@ -81,63 +80,45 @@ Matrix<T>::~Matrix()
 template<class T>
 Matrix<T>::Matrix(int r, int c)
 { 
-    try{
-        row = r;
-        col = c;
-        matrix = new T*[row];
-        for(int i = 0; i < row; i++)
-            matrix[i] = new T[col];
-        for(int i = 0; i < row; i++)
-            for(int j = 0; j < col; j++)
-                matrix[i][j] = 0;
-    } catch(exception e){
-        cout << "malloc err r c" << endl;
-        
-        exit(0);
-    }
+    row = r;
+    col = c;
+    matrix = new T*[row];
+    for(int i = 0; i < row; i++)
+        matrix[i] = new T[col];
+    for(int i = 0; i < row; i++)
+        for(int j = 0; j < col; j++)
+            matrix[i][j] = 0;
 }
 
 
 template<class T>
 Matrix<T>::Matrix(int n)
 { 
-    try{
-        row = n;
-        col = n;
-        matrix = new T*[row];
-        for(int i = 0; i < row; i++)
-            matrix[i] = new T[col];
-        for(int i = 0; i < row; i++)
-            for(int j = 0; j < col; j++)
-                if(i == j)
-                    matrix[i][j] = 1;
-                else
-                    matrix[i][j] = 0;
-    } catch(exception e){
-        cout << "malloc err n" << endl;
-        
-        exit(0);
-    }
+    row = n;
+    col = n;
+    matrix = new T*[row];
+    for(int i = 0; i < row; i++)
+        matrix[i] = new T[col];
+    for(int i = 0; i < row; i++)
+        for(int j = 0; j < col; j++)
+            if(i == j)
+                matrix[i][j] = 1;
+            else
+                matrix[i][j] = 0;
 }
 
 
 template<class T>
 Matrix<T>::Matrix(const Matrix<T> &a)
 {
-    try{
-        row = a.r();
-        col = a.c();
-        matrix = new T*[row];
-        for(int i = 0; i < row; i++)
-            matrix[i] = new T[col];
-        for(int i = 0; i < row; i++)
-            for(int j = 0; j < col; j++)
-                matrix[i][j] = a(i, j);
-    } catch(exception e){
-        cout << "malloc err r c" << endl;
-        
-        exit(0);
-    }
+    row = a.r();
+    col = a.c();
+    matrix = new T*[row];
+    for(int i = 0; i < row; i++)
+        matrix[i] = new T[col];
+    for(int i = 0; i < row; i++)
+        for(int j = 0; j < col; j++)
+            matrix[i][j] = a(i, j);
 }
 
 
@@ -157,20 +138,14 @@ template<class T>
 void Matrix<T>::resize(int r, int c){
     if(row == r && col == c) return;
     
-    try{
-        row = r;
-        col = c;
-        matrix = new T*[row];
-        for(int i = 0; i < row; i++)
-            matrix[i] = new T[col];
-        for(int i = 0; i < row; i++)
-            for(int j = 0; j < col; j++)
-                matrix[i][j] = 0;
-    } catch(exception e){
-        cout << "malloc err resize" << endl;
-        
-        exit(0);
-    }
+    row = r;
+    col = c;
+    matrix = new T*[row];
+    for(int i = 0; i < row; i++)
+        matrix[i] = new T[col];
+    for(int i = 0; i < row; i++)
+        for(int j = 0; j < col; j++)
+            matrix[i][j] = 0;
 }
 
 
@@ -233,13 +208,6 @@ ostream& operator<<(ostream& o, const Matrix<U>& M){
 
 template<class T>
 T& Matrix<T>::operator()(int r, int c) const {
-    try{
-        if(r < 0 || r >= row || c < 0 || c >= col)
-            throw "index error in matrix operator()";
-    } catch(const char * errmsg) {
-        cout << errmsg << endl;
-        exit(0);
-    }
     return matrix[r][c];
 }
 
@@ -300,13 +268,6 @@ bool Matrix<T>::operator!=(const Matrix<T>& M){
 
 template<class T>
 Matrix<T> Matrix<T>::operator*(const Matrix<T>& M) const{
-    try{
-        if(col != M.r())
-            throw "dimension error in computing multiplication of two matrices";
-    } catch(const char * errmsg){
-        cout << errmsg << endl;
-        exit(0);
-    }
 
     Matrix<T> res(row, M.c());
     int sum;
@@ -362,14 +323,7 @@ Matrix<T>& Matrix<T>::rowOp(RowOp type, int row1, int row2, double scalar){
 
 template<class T>
 Matrix<T>& Matrix<T>::rowSwap(int row1, int row2){
-    try{
-        if(row1 == row2) return *this;
-        if(row1 < 0 || row1 >= row || row2 < 0 || row2 >= row)
-            throw "rowSwap arg error";
-    } catch(const char * errmsg){
-        cout << errmsg << " row1=" << row1 << ", row2=" << row2 << ", row=" << row << endl;
-        exit(0);
-    }
+    if(row1 == row2) return *this;
 
     T temp;
     for(int i = 0; i < col; i++){
@@ -384,19 +338,12 @@ Matrix<T>& Matrix<T>::rowSwap(int row1, int row2){
 
 template<class T>
 Matrix<T>& Matrix<T>::rowAddTo(int row1, int row2, double scalar){
-    try{
-        if(row1 == row2) return *this;
-        if(row1 < 0 || row1 >= row || row2 < 0 || row2 >= row)
-            throw "rowAddTo arg error";
-    } catch(const char * errmsg){
-        cout << errmsg << " row1=" << row1 << ", row2=" << row2 << ", row=" << row << endl;
-        exit(0);
-    }
+    if(row1 == row2) return *this;
 
     double temp;
     for(int i = 0; i < col; i++){
         temp = scalar * matrix[row1][i] + matrix[row2][i];
-        temp = (temp <= THRESHOLD && temp >= -THRESHOLD) ? 0.0 : temp;
+        temp = (temp <= 0.0000000001 && temp >= -0.0000000001) ? 0.0 : temp;
         matrix[row2][i] = (T)(temp);
     }
     return * this;
@@ -405,18 +352,10 @@ Matrix<T>& Matrix<T>::rowAddTo(int row1, int row2, double scalar){
 
 template<class T>
 Matrix<T>& Matrix<T>::rowScale(int r, double scalar){
-    try{
-        if(r < 0 || r >= row)
-            throw "rowScale arg error";
-    } catch(const char * errmsg){
-        cout << errmsg << " arg=" << r << ", row=" << row << endl;
-        exit(0);
-    }
-
     double temp;
     for(int i = 0; i < col; i++){
         temp = (double)(scalar * matrix[r][i]);
-        temp = (temp <= THRESHOLD && temp >= -THRESHOLD) ? 0.0 : temp;
+        temp = (temp <= 0.0000000001 && temp >= -0.0000000001) ? 0.0 : temp;
         matrix[r][i] = (T)(temp);
     }
     return * this;
@@ -478,14 +417,6 @@ Matrix<T>& Matrix<T>::RREF(){
 
 template<class T>
 Matrix<T>& Matrix<T>::inverse(){
-    try{
-        if(row != col)
-            throw "row and col should be same to conpute inverse";
-    } catch(const char * errmsg){
-        cout << errmsg << endl;
-        exit(0); 
-    }
-
     /* --- 概念 ---
      * 設 n*n 矩陣 A 
      * [ A | I ] -> RREF -> [ I | A inverse ]
@@ -546,13 +477,6 @@ Matrix<T>& Matrix<T>::inverse(){
 
 template<class T>
 T Matrix<T>::determinant(){
-    try{
-        if(row != col)
-            throw "row and col should be same to conpute determinant";
-    } catch(const char * errmsg){
-        cout << errmsg << endl;
-        exit(0); 
-    }
 
     /* --- 概念 ---
      * 設 n*n 矩陣 A 經列運算變成 B，為 A 的REF，讓pivot 維持原本的大小 （不做 row scale 列運算）
@@ -602,7 +526,7 @@ T Matrix<T>::determinant(){
     for(int i = 0; i < row; i++)
         ans *= (T)(matrix[i][i]); // REF主對角線元素相乘就是determin
 
-    ans = (ans <= (T)THRESHOLD && ans >= -(T)THRESHOLD) ? (T)(0.0) : ans; // detect double -0.0
+    ans = (ans <= (T)0.0000000001 && ans >= -(T)0.0000000001) ? (T)(0.0) : ans; // detect double -0.0
 
     *this = cache; // restore self
 
